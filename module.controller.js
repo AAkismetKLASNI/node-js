@@ -3,6 +3,9 @@ const path = require('path');
 
 module.exports = {
   addNote,
+  removeNote,
+  getNotes,
+  updateNote,
 };
 
 const dbPath = path.join(__dirname, 'db.json');
@@ -15,18 +18,38 @@ async function addNote(title) {
     id: Date.now().toString(),
   };
 
-  console.log(notes);
-
   notes.push(note);
 
-  await fs.appendFile(dbPath, JSON.stringify(notes));
+  saveNote(notes);
+}
+
+async function saveNote(notes) {
+  await fs.writeFile(dbPath, JSON.stringify(notes));
 }
 
 async function getNotes() {
-  const buffer = await fs.readFile(dbPath);
-  const notes = Buffer.from(buffer);
+  const notes = await fs.readFile(dbPath, { encoding: 'utf-8' });
 
-  return Array.isArray(notes) ? notes : [];
+  const parseNotes = JSON.parse(notes);
+
+  return parseNotes;
 }
 
-addNote('123');
+async function removeNote(idNote) {
+  const notes = await getNotes();
+
+  const newNotes = notes.filter(({ id }) => id !== idNote);
+
+  await saveNote(newNotes);
+}
+
+async function updateNote(noteData) {
+  const notes = await getNotes();
+
+  const index = notes.findIndex(({ id }) => id === noteData.id);
+
+  if (index >= 0) {
+    notes[index] = { ...notes[index], ...noteData };
+    await saveNote(notes);
+  }
+}

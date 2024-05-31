@@ -1,30 +1,64 @@
-const http = require('http');
-const fs = require('fs/promises');
+const express = require('express');
 const path = require('path');
+const {
+  addNote,
+  getNotes,
+  removeNote,
+  updateNote,
+} = require('./module.controller');
 
+const app = express();
 const POST = 3000;
-const mainPage = path.join(__dirname, 'pages');
 
-const server = http.createServer(async (req, res) => {
-  if (req.method === 'GET') {
-    const site = await fs.readFile(path.join(mainPage, 'index.html'));
-    res.writeHead(200, { 'Content-type': 'text/html' });
-    res.end(site);
-  } else if (req.method === 'POST') {
-    const body = [];
+app.set('view engine', 'ejs');
+app.set('views', 'pages');
 
-    req.on('data', (data) => {
-      body.push(Buffer.from(data));
-    });
+app.use(express.json());
+app.use(express.static(path.resolve(__dirname, 'public')));
+app.use(express.urlencoded({ extended: true }));
 
-    req.on('end', () => {
-      const title = body.toString().split('=')[1].replaceAll('+', ' ');
-    });
+app.get('/', async (req, res) => {
+  console.log('get');
 
-    res.end('post');
-  }
+  res.render('index', {
+    title: 'Express!',
+    notes: await getNotes(),
+    created: false,
+  });
 });
 
-server.listen(POST, () => {
+app.post('/', async (req, res) => {
+  console.log('post');
+  await addNote(req.body.title);
+
+  res.render('index', {
+    title: 'Express!',
+    notes: await getNotes(),
+    created: true,
+  });
+});
+
+app.delete('/:id', async (req, res) => {
+  console.log('delete');
+  await removeNote(req.params.id);
+
+  res.render('index', {
+    title: 'Express!',
+    notes: await getNotes(),
+    created: false,
+  });
+});
+
+app.put('/:id', async (req, res) => {
+  await updateNote({ id: req.params.id, title: req.body.title });
+
+  res.render('index', {
+    title: 'Express App',
+    notes: await getNotes(),
+    created: false,
+  });
+});
+
+app.listen(POST, () => {
   console.log('SERVER STARTED');
 });

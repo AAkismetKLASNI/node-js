@@ -1,0 +1,29 @@
+const fs = require('fs/promises');
+const http = require('http');
+const mainPage = path.join(__dirname, 'pages');
+const path = require('path');
+
+const server = http.createServer(async (req, res) => {
+  if (req.method === 'GET') {
+    const site = await fs.readFile(path.join(mainPage, 'index.html'));
+    res.writeHead(200, { 'Content-type': 'text/html' });
+    res.end(site);
+  } else if (req.method === 'POST') {
+    res.writeHead(200, { 'Content-type': 'text/plain; charset=utf-8' });
+
+    const body = [];
+
+    req.on('data', (data) => {
+      body.push(Buffer.from(data));
+    });
+
+    req.on('end', () => {
+      const title = body.toString().split('=')[1].replaceAll('+', ' ');
+      console.log(title);
+
+      addNote(title);
+    });
+
+    res.end('post');
+  }
+});
